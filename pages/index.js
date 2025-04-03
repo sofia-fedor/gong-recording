@@ -83,34 +83,6 @@ export default function Home() {
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">
-                 From&nbsp;
-              </label>
-              <input
-                type="date"
-                id="dateFrom"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 mb-1">
-                To&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              </label>
-              <input
-                type="date"
-                id="dateTo"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          </div>
-          
           <button
             type="submit"
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
