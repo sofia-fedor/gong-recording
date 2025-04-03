@@ -45,13 +45,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Head>
-        <title>CSV Search</title>
+        <title>Gong Recordings</title>
         <meta name="description" content="Search CSV data by participant names and context" />
       </Head>
       
       <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-8">
-          Search Interactions
+          Gong Recordings
         </h1>
         
         <form onSubmit={handleSearch} className="bg-white shadow rounded-lg p-6 mb-6">
