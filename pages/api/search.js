@@ -57,6 +57,11 @@ export default async function handler(req, res) {
               contextMatch = true;
             }
             
+            // Search in brief
+            if (contentObj.brief && contentObj.brief.toLowerCase().includes(context.toLowerCase())) {
+              contextMatch = true;
+            }
+
             // Search in outline text
             else if (contentObj.outline && Array.isArray(contentObj.outline)) {
               const outlineMatch = contentObj.outline.some(section => 
