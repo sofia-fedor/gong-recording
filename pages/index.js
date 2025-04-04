@@ -6,13 +6,23 @@ export default function Home() {
   const [context, setContext] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [password, setPassword] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedOutlines, setExpandedOutlines] = useState({});
+  const [error, setError] = useState('');
 
   const handleSearch = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
+    
+    // Check if the password is correct
+    if (password !== 'CIENCE') {
+      setError('Incorrect password. Please enter the correct password to search.');
+      setIsLoading(false);
+      return;
+    }
     
     try {
       const response = await fetch('/api/search', {
@@ -24,12 +34,18 @@ export default function Home() {
       });
       
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error searching');
+      }
+      
       setResults(data);
       
-      // Скидаємо стан розгорнутості при новому пошуку
+      // Reset expanded outlines state when performing a new search
       setExpandedOutlines({});
     } catch (error) {
       console.error('Error searching:', error);
+      setError(error.message || 'Failed to perform search. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -79,9 +95,54 @@ export default function Home() {
               value={context}
               onChange={(e) => setContext(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Search in brief, topics, or outline"
+              placeholder="Search in brief"
             />
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">
+                Date
+              </label>
+              <div>
+                <input
+                  type="date"
+                  id="dateFrom"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                /><span>&nbsp;&nbsp;</span>
+                <input
+                  type="date"
+                  id="dateTo"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter password to search"
+              required
+            />
+          </div>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md border border-red-200">
+              {error}
+            </div>
+          )}
           
           <button
             type="submit"
@@ -106,7 +167,6 @@ export default function Home() {
                     <u>Recording Link</u>
                   </a>
                   {result.brief && <p className="text-sm text-gray-600"><strong>Brief:</strong> {result.brief}</p>}
-                  {result.topics && <p className="text-sm text-gray-600"><strong>Topics:</strong> {result.topics}</p>}
                   
                   {result.outline && (
                     <div className="mt-2">
@@ -118,7 +178,7 @@ export default function Home() {
                         <span className="text-sm font-medium text-gray-700"><strong>Show Outline</strong></span>
                       </div>
                       
-                      <div className="outline-content" style={{ display: expandedOutlines[result.id] ? 'block' : 'none' }}>
+                      <div className="outline-content ml-4 mt-2" style={{ display: expandedOutlines[result.id] ? 'block' : 'none' }}>
                         <ul className="list-disc pl-5 text-sm text-gray-600">
                           {result.outline.split('\n').map((line, index) => (
                             <li key={index}>{line}</li>

@@ -7,16 +7,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, context } = req.body;
+    const { name, context, dateFrom, dateTo } = req.body;
 
-    if (!name && !context) {
-      return res.status(400).json({ message: 'Please provide at least one search parameter' });
-    }
+    // Allow search with just password (removing the validation that requires at least one parameter)
+    // if (!name && !context && !dateFrom && !dateTo) {
+    //   return res.status(400).json({ message: 'Please provide at least one search parameter' });
+    // }
 
     const data = await parseCSV();
 
     // Filter results based on search parameters
     const filteredResults = data.filter(item => {
+      // Name filter
       let nameMatch = true;
       if (name) {
         nameMatch = false;
@@ -37,6 +39,7 @@ export default async function handler(req, res) {
         }
       }
 
+      // Context filter
       let contextMatch = true;
       if (context) {
         contextMatch = false;
@@ -52,14 +55,6 @@ export default async function handler(req, res) {
             // Search in brief
             if (contentObj.brief && contentObj.brief.toLowerCase().includes(context.toLowerCase())) {
               contextMatch = true;
-            }
-            
-            // Search in topics names
-            else if (contentObj.topics && Array.isArray(contentObj.topics)) {
-              const topicMatch = contentObj.topics.some(topic => 
-                topic.name && topic.name.toLowerCase().includes(context.toLowerCase())
-              );
-              if (topicMatch) contextMatch = true;
             }
             
             // Search in outline text
@@ -98,7 +93,40 @@ export default async function handler(req, res) {
         }
       }
 
-      return nameMatch && contextMatch;
+      // Date filter
+      let dateMatch = true;
+      if (dateFrom || dateTo) {
+        dateMatch = false;
+        let itemDate = null;
+        
+        // Try to get scheduled date from metaData
+        if (item.scheduled) {
+          try {
+            itemDate = DateTime.fromISO(item.scheduled, { zone: 'utc' });
+          } catch (error) {
+            console.error('Error parsing scheduled date:', error);
+          }
+        } else if (item.metaData && item.metaData.scheduled) {
+          try {
+            itemDate = DateTime.fromISO(item.metaData.scheduled, { zone: 'utc' });
+          } catch (error) {
+            console.error('Error parsing metaData scheduled date:', error);
+          }
+        }
+        
+        if (itemDate) {
+          const fromDate = dateFrom ? DateTime.fromISO(dateFrom) : null;
+          const toDate = dateTo ? DateTime.fromISO(dateTo).plus({ days: 1 }).minus({ seconds: 1 }) : null;
+          
+          dateMatch = (!fromDate || itemDate >= fromDate) && (!toDate || itemDate <= toDate);
+        } else {
+          // If we can't determine the item's date and date filtering is applied,
+          // we exclude the item from results
+          dateMatch = false;
+        }
+      }
+
+      return nameMatch && contextMatch && dateMatch;
     });
 
     // Format results to return necessary information with Recording link
@@ -147,9 +175,12 @@ export default async function handler(req, res) {
       const recordingUrl = `https://drive.google.com/drive/search?q=title:${resultId}.mp4%20type:video`;
       
       let formattedDate = 'Unknown';
+      let originalDate = null;
+      
       if (item.scheduled) {
         try {
-          formattedDate = DateTime.fromISO(item.scheduled, { zone: 'utc' })
+          originalDate = DateTime.fromISO(item.scheduled, { zone: 'utc' });
+          formattedDate = originalDate
             .setZone('America/New_York')
             .toFormat('MM-dd-yyyy, hh:mm a');
         } catch (error) {
@@ -165,11 +196,25 @@ export default async function handler(req, res) {
           topics: topics.join(', '),
           outline, 
           recording: recordingUrl,
-          scheduled: formattedDate
+          scheduled: formattedDate,
+          originalDate: originalDate ? originalDate.toISO() : null // Store original date for sorting
       };
-  });
+    });
 
-    res.status(200).json(formattedResults);
+    // Sort results from newest to oldest by scheduled date
+    const sortedResults = formattedResults.sort((a, b) => {
+      if (!a.originalDate) return 1;  // Items without dates go to the end
+      if (!b.originalDate) return -1;
+      return b.originalDate.localeCompare(a.originalDate); // Sort newest first
+    });
+
+    // Remove the sorting field before sending to client
+    const finalResults = sortedResults.map(item => {
+      const { originalDate, ...rest } = item;
+      return rest;
+    });
+
+    res.status(200).json(finalResults);
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ message: 'Error processing search request', error: error.message });
