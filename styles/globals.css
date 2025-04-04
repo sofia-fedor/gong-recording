@@ -110,7 +110,7 @@ h2 {
 /* Форма пошуку */
 form.bg-white {
   border-left: 4px solid var(--primary);
-  margin: 0 auto;
+  margin: 0 auto 50px;
   width: 500px;
   max-width: 100%;
 }
